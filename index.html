@@ -3,1173 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS System - ระบบขายหน้าร้าน</title>
+    <title>POS System - Complete Version</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- External Libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/styled-components@5.3.11/dist/styled-components.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Babel for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f5f5;
         }
         
-        .top-menu-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #ce4b4b;
-            color: white;
-            height: 60px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        .menu-button {
-            background: none;
-            border: 1px solid white;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            margin-left: 10px;
-            transition: background-color 0.2s;
-        }
-        
-        .menu-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .main-layout {
-            display: flex;
-            height: calc(100vh - 60px);
-        }
-        
-        .sidebar {
-            width: 300px;
-            background-color: white;
-            border-right: 1px solid #ddd;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        
-        .content-area {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .table-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .table-card {
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        
-        .table-card.active {
-            border-color: #ce4b4b;
-        }
-        
-        .table-card.open {
-            background: #e8f5e8;
-            border-color: #4caf50;
-        }
-        
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .menu-item {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        
-        .menu-item:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
-        }
-        
-        .category-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .category-button {
-            background: white;
-            color: #ce4b4b;
-            border: 2px solid #ce4b4b;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .category-button:hover, .category-button.active {
-            background: #ce4b4b;
-            color: white;
-        }
-        
-        .order-list {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .order-item:last-child {
-            border-bottom: none;
-        }
-        
-        .button {
-            background-color: #ce4b4b;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            margin: 5px;
-        }
-        
-        .button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        
-        .button.large {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .button.green {
-            background-color: #4CAF50;
-        }
-        
-        .button.orange {
-            background-color: #FF9800;
-        }
-        
-        .button.blue {
-            background-color: #2196F3;
-        }
-        
-        .button.red {
-            background-color: #f44336;
-        }
-        
-        .popup-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
+        #root {
             width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            height: 100vh;
+        }
+        
+        /* Loading spinner */
+        .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-        }
-        
-        .popup-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 90%;
-            max-height: 90%;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        
-        .section-title {
-            color: #ce4b4b;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            margin: 5px 0;
-        }
-        
-        .input:focus {
-            outline: none;
-            border-color: #ce4b4b;
-            box-shadow: 0 0 0 2px rgba(206, 75, 75, 0.2);
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .welcome-screen {
-            text-align: center;
-            margin-top: 50px;
-        }
-        
-        .summary-total {
-            text-align: right;
-            margin-top: 15px;
+            height: 100vh;
             font-size: 18px;
-            font-weight: bold;
+            color: #666;
         }
         
-        .receipt-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: monospace;
-            line-height: 1.4;
-            max-width: 300px;
-            margin: 0 auto;
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ce4b4b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
         }
-
-        .settings-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
-        .settings-card:hover {
-            background: #f8f9fa;
-            border-color: #ce4b4b;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .settings-card h3 {
-            margin: 0 0 10px 0;
-            color: #ce4b4b;
-        }
-
-        .settings-card p {
-            margin: 0;
-            color: #666;
-            font-size: 0.9em;
-        }
-
+        
+        /* Print styles */
         @media print {
             .no-print {
                 display: none !important;
             }
             
-            .receipt-content {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+            
+            .receipt-preview-popup {
                 width: 80mm;
                 margin: 0;
-                padding: 5mm;
+                padding: 0;
                 background: white;
-                color: black;
-                font-family: monospace;
-                font-size: 12px;
-                line-height: 1.2;
+                color: #000000;
+            }
+            
+            .receipt-preview-popup table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            
+            .receipt-preview-popup th,
+            .receipt-preview-popup td {
+                padding: 2px 4px;
+                text-align: left;
+                border: none;
+                font-size: inherit;
+            }
+            
+            .receipt-preview-popup .summary-total {
+                font-weight: bold;
+                font-size: 1.1em;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Login Popup -->
-    <div id="loginPopup" class="popup-bg">
-        <div class="popup-content">
-            <h2 class="section-title">เข้าสู่ระบบ</h2>
-            <form id="loginForm">
-                <input type="text" id="loginUsername" class="input" placeholder="ชื่อผู้ใช้" required>
-                <input type="password" id="loginPassword" class="input" placeholder="รหัสผ่าน" required>
-                <button type="submit" class="button green">เข้าสู่ระบบ</button>
-            </form>
-            <div style="margin-top: 20px; font-size: 12px; color: #666;">
-                <p><strong>บัญชีทดสอบ:</strong></p>
-                <p>เจ้าของร้าน: admin / admin123</p>
-                <p>พนักงาน: staff / staff123</p>
-            </div>
+    <div id="root">
+        <div class="loading">
+            <div class="spinner"></div>
+            กำลังโหลดระบบ POS...
         </div>
     </div>
-
-    <!-- Main App -->
-    <div id="mainApp" class="hidden">
-        <!-- Top Menu Bar -->
-        <div class="top-menu-bar">
-            <div>
-                <h2>ระบบขายหน้าร้าน</h2>
-                <small id="userInfo">ผู้ใช้: </small>
-            </div>
-            <div>
-                <button class="menu-button" id="settingsBtn">ตั้งค่าระบบ</button>
-                <button class="menu-button" id="customerBtn">ลูกค้า</button>
-                <button class="menu-button" id="logoutBtn">ออกจากระบบ</button>
-            </div>
-        </div>
-
-        <!-- Main Layout -->
-        <div class="main-layout">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <h3>โต๊ะทั้งหมด</h3>
-                <div class="table-grid" id="tableGrid">
-                    <!-- Tables will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Content Area -->
-            <div class="content-area">
-                <div id="welcomeScreen" class="welcome-screen">
-                    <h2>กรุณาเลือกโต๊ะเพื่อเริ่มการขาย</h2>
-                </div>
-
-                <div id="tableContent" class="hidden">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 id="currentTableName">โต๊ะที่ 1</h2>
-                        <div>
-                            <button class="button large orange" id="printSampleBtn">พิมพ์บิลตัวอย่าง</button>
-                            <button class="button large green" id="paymentBtn">รับชำระเงิน</button>
-                        </div>
-                    </div>
-
-                    <!-- Category List -->
-                    <div class="category-list" id="categoryList">
-                        <!-- Categories will be populated by JavaScript -->
-                    </div>
-
-                    <!-- Menu Grid -->
-                    <div class="menu-grid" id="menuGrid">
-                        <!-- Menu items will be populated by JavaScript -->
-                    </div>
-
-                    <!-- Order List -->
-                    <div id="orderList" class="order-list hidden">
-                        <h3>รายการสั่ง</h3>
-                        <div id="orderItems">
-                            <!-- Order items will be populated by JavaScript -->
-                        </div>
-                        <div class="summary-total" id="orderTotal">
-                            ยอดรวม: ฿0
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payment Popup -->
-    <div id="paymentPopup" class="popup-bg hidden">
-        <div class="popup-content">
-            <h2 class="section-title">รับชำระเงิน</h2>
-            <div id="paymentInfo">
-                <p><strong>โต๊ะ:</strong> <span id="paymentTableName"></span></p>
-                <p><strong>ยอดรวม:</strong> ฿<span id="paymentTotal"></span></p>
-                
-                <div style="margin: 15px 0;">
-                    <label>วิธีชำระเงิน:</label>
-                    <select id="paymentMethod" class="input">
-                        <option value="เงินสด">เงินสด</option>
-                        <option value="โอนเงิน">โอนเงิน</option>
-                        <option value="PromptPay">PromptPay</option>
-                        <option value="บัตรเครดิต">บัตรเครดิต</option>
-                    </select>
-                </div>
-
-                <div style="margin: 15px 0;">
-                    <label>จำนวนเงินที่รับ:</label>
-                    <input type="number" id="paymentAmountPaid" class="input" placeholder="0">
-                </div>
-
-                <div style="margin: 15px 0;">
-                    <p><strong>เงินทอน:</strong> ฿<span id="paymentChange">0</span></p>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="button green" id="confirmPaymentBtn">ชำระเงิน</button>
-                <button class="button red" id="cancelPaymentBtn">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Receipt Preview Popup -->
-    <div id="receiptPopup" class="popup-bg hidden">
-        <div class="popup-content">
-            <div class="receipt-content" id="receiptContent">
-                <!-- Receipt content will be populated by JavaScript -->
-            </div>
-            <div style="text-align: center; margin-top: 20px;" class="no-print">
-                <button class="button blue" onclick="window.print()">พิมพ์ใบเสร็จ</button>
-                <button class="button" id="closeReceiptBtn">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Popup -->
-    <div id="settingsPopup" class="popup-bg hidden">
-        <div class="popup-content">
-            <h2 class="section-title">ตั้งค่าระบบ</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
-                <div class="settings-card" onclick="showStoreSettings()">
-                    <h3>ข้อมูลร้าน</h3>
-                    <p>จัดการชื่อร้าน PromptPay</p>
-                </div>
-                <div class="settings-card" onclick="showMenuManagement()">
-                    <h3>จัดการเมนู</h3>
-                    <p>เพิ่ม ลบ แก้ไขเมนูอาหาร</p>
-                </div>
-                <div class="settings-card" onclick="showTableManagement()">
-                    <h3>จัดการโต๊ะ</h3>
-                    <p>เพิ่ม ลบ แก้ไขโต๊ะ</p>
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="button" onclick="hideSettingsPopup()">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Store Settings Popup -->
-    <div id="storeSettingsPopup" class="popup-bg hidden">
-        <div class="popup-content">
-            <h2 class="section-title">ข้อมูลร้าน</h2>
-            <div style="margin: 20px 0;">
-                <label>ชื่อร้าน:</label>
-                <input type="text" id="storeNameInput" class="input" placeholder="ชื่อร้านอาหารของคุณ">
-            </div>
-            <div style="margin: 20px 0;">
-                <label>หมายเลข PromptPay:</label>
-                <input type="text" id="promptPayInput" class="input" placeholder="0xx-xxx-xxxx">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="button green" onclick="saveStoreSettings()">บันทึก</button>
-                <button class="button" onclick="hideStoreSettings()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Menu Management Popup -->
-    <div id="menuManagementPopup" class="popup-bg hidden">
-        <div class="popup-content" style="max-width: 600px;">
-            <h2 class="section-title">จัดการเมนูอาหาร</h2>
-            <div style="margin: 20px 0;">
-                <button class="button green" onclick="addNewCategory()">เพิ่มหมวดหมู่</button>
-                <button class="button blue" onclick="addNewMenuItem()">เพิ่มเมนู</button>
-            </div>
-            <div id="menuManagementList" style="max-height: 400px; overflow-y: auto;">
-                <!-- Menu items will be populated by JavaScript -->
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="button" onclick="hideMenuManagement()">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Table Management Popup -->
-    <div id="tableManagementPopup" class="popup-bg hidden">
-        <div class="popup-content">
-            <h2 class="section-title">จัดการโต๊ะ</h2>
-            <div style="margin: 20px 0;">
-                <button class="button green" onclick="addNewTable()">เพิ่มโต๊ะใหม่</button>
-            </div>
-            <div id="tableManagementList" style="max-height: 400px; overflow-y: auto;">
-                <!-- Table list will be populated by JavaScript -->
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="button" onclick="hideTableManagement()">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script type="text/babel" src="app_simple.js"></script>
+    
+    <!-- PromptPay QR Code Generator -->
     <script>
-        // Global variables
-        let currentUser = null;
-        let activeTableIndex = null;
-        let tables = [];
-        let menuItems = [];
-        let categories = [];
-        let customers = [];
-        let salesHistory = [];
-        let nextBillNumber = 1;
-        let storeName = "ชื่อร้านอาหารของคุณ";
-        let promptPayNumber = "";
-        let selectedCategory = "ทั้งหมด";
-
-        // Initialize data
-        function initializeData() {
-            // Load from localStorage or set defaults
-            tables = JSON.parse(localStorage.getItem("tables")) || [
-                { id: 1, name: "โต๊ะที่ 1", orders: [], total: 0, isOpen: false, customer: null },
-                { id: 2, name: "โต๊ะที่ 2", orders: [], total: 0, isOpen: false, customer: null },
-                { id: 3, name: "โต๊ะที่ 3", orders: [], total: 0, isOpen: false, customer: null },
-                { id: 4, name: "โต๊ะที่ 4", orders: [], total: 0, isOpen: false, customer: null }
-            ];
-
-            menuItems = JSON.parse(localStorage.getItem("menuItems")) || [
-                { id: 1, name: "ข้าวผัด", price: 50, category: "อาหารจานเดียว" },
-                { id: 2, name: "ผัดไทย", price: 45, category: "อาหารจานเดียว" },
-                { id: 3, name: "ส้มตำ", price: 40, category: "อาหารอีสาน" },
-                { id: 4, name: "น้ำส้ม", price: 25, category: "เครื่องดื่ม" },
-                { id: 5, name: "กาแฟ", price: 30, category: "เครื่องดื่ม" }
-            ];
-
-            categories = JSON.parse(localStorage.getItem("categories")) || ["อาหารจานเดียว", "อาหารอีสาน", "เครื่องดื่ม"];
-            customers = JSON.parse(localStorage.getItem("customers")) || [];
-            salesHistory = JSON.parse(localStorage.getItem("salesHistory")) || [];
-            nextBillNumber = parseInt(localStorage.getItem("nextBillNumber")) || 1;
-            storeName = localStorage.getItem("storeName") || "ชื่อร้านอาหารของคุณ";
-            promptPayNumber = localStorage.getItem("promptPayNumber") || "";
-        }
-
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem("tables", JSON.stringify(tables));
-            localStorage.setItem("menuItems", JSON.stringify(menuItems));
-            localStorage.setItem("categories", JSON.stringify(categories));
-            localStorage.setItem("customers", JSON.stringify(customers));
-            localStorage.setItem("salesHistory", JSON.stringify(salesHistory));
-            localStorage.setItem("nextBillNumber", nextBillNumber.toString());
-            localStorage.setItem("storeName", storeName);
-            localStorage.setItem("promptPayNumber", promptPayNumber);
-        }
-
-        // Login functionality
-        function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-
-            // Simple authentication
-            if ((username === 'admin' && password === 'admin123') || 
-                (username === 'staff' && password === 'staff123')) {
-                currentUser = { username, role: username === 'admin' ? 'owner' : 'staff' };
-                document.getElementById('loginPopup').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('userInfo').textContent = `ผู้ใช้: ${username} (${currentUser.role === 'owner' ? 'เจ้าของร้าน' : 'พนักงาน'})`;
-                
-                // Show/hide settings button based on role
-                document.getElementById('settingsBtn').style.display = currentUser.role === 'owner' ? 'inline-block' : 'none';
-                
-                renderTables();
-                renderCategories();
-                renderMenu();
+        // Enhanced PromptPay QR Code Generator
+        window.generatePromptPayPayload = function(phoneNumber, amount) {
+            // Remove any non-digit characters from phone number
+            const cleanPhone = phoneNumber.replace(/\D/g, '');
+            
+            // Convert phone number to proper format
+            let formattedPhone;
+            if (cleanPhone.startsWith('0')) {
+                formattedPhone = '66' + cleanPhone.substring(1);
+            } else if (cleanPhone.startsWith('66')) {
+                formattedPhone = cleanPhone;
             } else {
-                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                formattedPhone = '66' + cleanPhone;
             }
-        }
-
-        // Logout functionality
-        function handleLogout() {
-            currentUser = null;
-            activeTableIndex = null;
-            document.getElementById('loginPopup').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-        }
-
-        // Render tables
-        function renderTables() {
-            const tableGrid = document.getElementById('tableGrid');
-            tableGrid.innerHTML = '';
-
-            tables.forEach((table, index) => {
-                const tableCard = document.createElement('div');
-                tableCard.className = `table-card ${activeTableIndex === index ? 'active' : ''} ${table.isOpen ? 'open' : ''}`;
-                tableCard.innerHTML = `
-                    <h4>${table.name}</h4>
-                    <p>รายการ: ${table.orders.length}</p>
-                    <p>ยอดรวม: ฿${table.total}</p>
-                    ${table.customer ? `<p>ลูกค้า: ${table.customer.name}</p>` : ''}
-                    ${table.isOpen ? `<button class="button red" onclick="closeTable(${index}); event.stopPropagation();">ปิดโต๊ะ</button>` : ''}
-                `;
-                tableCard.onclick = () => selectTable(index);
-                tableGrid.appendChild(tableCard);
-            });
-        }
-
-        // Select table
-        function selectTable(tableIndex) {
-            const table = tables[tableIndex];
-            if (!table.isOpen && table.orders.length === 0) {
-                tables[tableIndex].isOpen = true;
+            
+            // Build PromptPay payload
+            let payload = '';
+            
+            // Payload Format Indicator
+            payload += '000201';
+            
+            // Point of Initiation Method
+            payload += '010212';
+            
+            // Merchant Account Information
+            payload += '29';
+            const phoneLength = formattedPhone.length.toString().padStart(2, '0');
+            payload += (phoneLength.length + formattedPhone.length + 4).toString().padStart(2, '0');
+            payload += '0016A000000677010111';
+            payload += '01' + phoneLength + formattedPhone;
+            
+            // Transaction Currency (THB = 764)
+            payload += '5303764';
+            
+            // Transaction Amount
+            if (amount && amount > 0) {
+                const amountStr = amount.toFixed(2);
+                payload += '54' + amountStr.length.toString().padStart(2, '0') + amountStr;
             }
-            activeTableIndex = tableIndex;
             
-            document.getElementById('welcomeScreen').classList.add('hidden');
-            document.getElementById('tableContent').classList.remove('hidden');
-            document.getElementById('currentTableName').textContent = table.name;
+            // Country Code
+            payload += '5802TH';
             
-            renderTables();
-            renderOrderList();
-        }
-
-        // Close table
-        function closeTable(tableIndex) {
-            if (tables[tableIndex].orders.length > 0) {
-                if (!confirm(`โต๊ะ ${tables[tableIndex].name} ยังมีรายการอาหาร คุณต้องการปิดโต๊ะหรือไม่?`)) {
-                    return;
+            // CRC placeholder
+            payload += '6304';
+            
+            // Calculate CRC16
+            const crc = calculateCRC16(payload);
+            payload += crc;
+            
+            return payload;
+        };
+        
+        // CRC16 calculation for PromptPay
+        function calculateCRC16(data) {
+            const polynomial = 0x1021;
+            let crc = 0xFFFF;
+            
+            for (let i = 0; i < data.length; i++) {
+                crc ^= (data.charCodeAt(i) << 8);
+                for (let j = 0; j < 8; j++) {
+                    if (crc & 0x8000) {
+                        crc = (crc << 1) ^ polynomial;
+                    } else {
+                        crc <<= 1;
+                    }
+                    crc &= 0xFFFF;
                 }
             }
             
-            if (confirm(`คุณแน่ใจว่าต้องการปิดโต๊ะ ${tables[tableIndex].name} ใช่หรือไม่?`)) {
-                tables[tableIndex].isOpen = false;
-                tables[tableIndex].customer = null;
-                if (activeTableIndex === tableIndex) {
-                    activeTableIndex = null;
-                    document.getElementById('welcomeScreen').classList.remove('hidden');
-                    document.getElementById('tableContent').classList.add('hidden');
-                }
-                renderTables();
-                saveData();
-            }
+            return crc.toString(16).toUpperCase().padStart(4, '0');
         }
-
-        // Render categories
-        function renderCategories() {
-            const categoryList = document.getElementById('categoryList');
-            categoryList.innerHTML = '';
-
-            // Add "ทั้งหมด" category
-            const allButton = document.createElement('button');
-            allButton.className = `category-button ${selectedCategory === 'ทั้งหมด' ? 'active' : ''}`;
-            allButton.textContent = 'ทั้งหมด';
-            allButton.onclick = () => {
-                selectedCategory = 'ทั้งหมด';
-                renderCategories();
-                renderMenu();
-            };
-            categoryList.appendChild(allButton);
-
-            categories.forEach(category => {
-                const button = document.createElement('button');
-                button.className = `category-button ${selectedCategory === category ? 'active' : ''}`;
-                button.textContent = category;
-                button.onclick = () => {
-                    selectedCategory = category;
-                    renderCategories();
-                    renderMenu();
-                };
-                categoryList.appendChild(button);
-            });
-        }
-
-        // Render menu
-        function renderMenu() {
-            const menuGrid = document.getElementById('menuGrid');
-            menuGrid.innerHTML = '';
-
-            const filteredItems = selectedCategory === 'ทั้งหมด' 
-                ? menuItems 
-                : menuItems.filter(item => item.category === selectedCategory);
-
-            filteredItems.forEach(item => {
-                const menuItem = document.createElement('div');
-                menuItem.className = 'menu-item';
-                menuItem.innerHTML = `
-                    <div>${item.name}</div>
-                    <div>฿${item.price}</div>
-                `;
-                menuItem.onclick = () => addOrder(item.id);
-                menuGrid.appendChild(menuItem);
-            });
-        }
-
-        // Add order
-        function addOrder(menuItemId) {
-            if (activeTableIndex === null) {
-                alert('กรุณาเลือกโต๊ะก่อนเพิ่มรายการอาหาร');
-                return;
-            }
-
-            const menuItem = menuItems.find(item => item.id === menuItemId);
-            if (!menuItem) return;
-
-            const table = tables[activeTableIndex];
-            const existingOrderIndex = table.orders.findIndex(order => order.id === menuItemId);
-
-            if (existingOrderIndex >= 0) {
-                table.orders[existingOrderIndex].qty += 1;
-            } else {
-                table.orders.push({
-                    id: menuItemId,
-                    name: menuItem.name,
-                    price: menuItem.price,
-                    qty: 1
-                });
-            }
-
-            table.total = table.orders.reduce((sum, order) => sum + (order.price * order.qty), 0);
-            renderTables();
-            renderOrderList();
-            saveData();
-        }
-
-        // Render order list
-        function renderOrderList() {
-            if (activeTableIndex === null) return;
-
-            const table = tables[activeTableIndex];
-            const orderList = document.getElementById('orderList');
-            const orderItems = document.getElementById('orderItems');
-            const orderTotal = document.getElementById('orderTotal');
-
-            if (table.orders.length === 0) {
-                orderList.classList.add('hidden');
-                return;
-            }
-
-            orderList.classList.remove('hidden');
-            orderItems.innerHTML = '';
-
-            table.orders.forEach((order, index) => {
-                const orderItem = document.createElement('div');
-                orderItem.className = 'order-item';
-                orderItem.innerHTML = `
-                    <div>
-                        <strong>${order.name}</strong><br>
-                        ฿${order.price} x ${order.qty} = ฿${order.price * order.qty}
-                    </div>
-                    <button class="button blue" onclick="editQuantity(${index})">แก้ไข</button>
-                `;
-                orderItems.appendChild(orderItem);
-            });
-
-            orderTotal.textContent = `ยอดรวม: ฿${table.total}`;
-        }
-
-        // Edit quantity (simplified)
-        function editQuantity(orderIndex) {
-            const table = tables[activeTableIndex];
-            const order = table.orders[orderIndex];
-            const newQty = prompt(`แก้ไขจำนวน ${order.name} (ปัจจุบัน: ${order.qty})`, order.qty);
-            
-            if (newQty !== null) {
-                const qty = parseInt(newQty);
-                if (qty > 0) {
-                    order.qty = qty;
-                } else {
-                    table.orders.splice(orderIndex, 1);
-                }
-                table.total = table.orders.reduce((sum, order) => sum + (order.price * order.qty), 0);
-                renderTables();
-                renderOrderList();
-                saveData();
-            }
-        }
-
-        // Payment functionality
-        function showPaymentPopup() {
-            if (activeTableIndex === null || tables[activeTableIndex].orders.length === 0) {
-                alert('ไม่มีรายการสั่งในโต๊ะนี้');
-                return;
-            }
-
-            const table = tables[activeTableIndex];
-            document.getElementById('paymentTableName').textContent = table.name;
-            document.getElementById('paymentTotal').textContent = table.total;
-            document.getElementById('paymentAmountPaid').value = table.total;
-            document.getElementById('paymentChange').textContent = '0';
-            document.getElementById('paymentPopup').classList.remove('hidden');
-        }
-
-        function hidePaymentPopup() {
-            document.getElementById('paymentPopup').classList.add('hidden');
-        }
-
-        function calculateChange() {
-            const total = parseFloat(document.getElementById('paymentTotal').textContent);
-            const paid = parseFloat(document.getElementById('paymentAmountPaid').value) || 0;
-            const change = Math.max(0, paid - total);
-            document.getElementById('paymentChange').textContent = change.toFixed(2);
-        }
-
-        function processPayment() {
-            const table = tables[activeTableIndex];
-            const total = table.total;
-            const paid = parseFloat(document.getElementById('paymentAmountPaid').value) || 0;
-            const paymentMethod = document.getElementById('paymentMethod').value;
-
-            if (paid < total) {
-                alert('จำนวนเงินที่รับไม่เพียงพอ');
-                return;
-            }
-
-            const change = paid - total;
-            const transactionId = `TRX-${nextBillNumber}`;
-
-            // Create receipt data
-            const receiptData = {
-                storeName,
-                tableNumber: table.id,
-                tableName: table.name,
-                orders: [...table.orders],
-                total: total,
-                paymentMethod: paymentMethod,
-                amountPaid: paid,
-                change: change,
-                transactionId: transactionId,
-                timestamp: new Date().toISOString()
-            };
-
-            // Add to sales history
-            salesHistory.unshift({
-                id: transactionId,
-                tableNumber: table.id,
-                tableName: table.name,
-                orders: [...table.orders],
-                total: total,
-                customer: table.customer,
-                paymentMethod: paymentMethod,
-                timestamp: new Date().toISOString(),
-                amountPaid: paid,
-                change: change
-            });
-
-            // Clear table
-            tables[activeTableIndex] = {
-                ...table,
-                orders: [],
-                total: 0,
-                isOpen: false,
-                customer: null
-            };
-
-            nextBillNumber++;
-            activeTableIndex = null;
-
-            // Show receipt
-            showReceipt(receiptData);
-            hidePaymentPopup();
-            
-            document.getElementById('welcomeScreen').classList.remove('hidden');
-            document.getElementById('tableContent').classList.add('hidden');
-            
-            renderTables();
-            saveData();
-        }
-
-        // Show receipt
-        function showReceipt(receiptData) {
-            const receiptContent = document.getElementById('receiptContent');
-            receiptContent.innerHTML = `
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <h3 style="margin: 0 0 5px 0;">${receiptData.storeName}</h3>
-                    <p style="margin: 0; font-size: 0.9em;">
-                        ${receiptData.tableName} | ${new Date(receiptData.timestamp).toLocaleString('th-TH')}
-                    </p>
-                    <p style="margin: 0; font-size: 0.9em;">
-                        เลขที่: ${receiptData.transactionId}
-                    </p>
-                </div>
-                
-                <hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">
-                
-                <table style="width: 100%; font-size: 0.9em;">
-                    <tbody>
-                        ${receiptData.orders.map(order => `
-                            <tr>
-                                <td style="text-align: left;">${order.name}</td>
-                                <td style="text-align: right;">
-                                    ${order.qty} x ${order.price} = ${order.qty * order.price}
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                
-                <hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">
-                
-                <div style="text-align: right;">
-                    <p style="margin: 2px 0;">รวม: ฿${receiptData.total}</p>
-                    <p style="margin: 2px 0;">รับเงิน: ฿${receiptData.amountPaid}</p>
-                    <p style="margin: 2px 0;">เงินทอน: ฿${receiptData.change}</p>
-                    <p style="margin: 2px 0;">ชำระด้วย: ${receiptData.paymentMethod}</p>
-                </div>
-                
-                <div style="text-align: center; margin-top: 15px; font-size: 0.8em;">
-                    ขอบคุณที่ใช้บริการ
-                </div>
-            `;
-            document.getElementById('receiptPopup').classList.remove('hidden');
-        }
-
-        function hideReceipt() {
-            document.getElementById('receiptPopup').classList.add('hidden');
-        }
-
-        // Print sample receipt
-        function printSampleReceipt() {
-            const sampleOrders = [
-                { id: 1, name: "ข้าวผัด", price: 50, qty: 2 },
-                { id: 2, name: "ส้มตำ", price: 40, qty: 1 },
-                { id: 3, name: "น้ำส้ม", price: 25, qty: 2 }
-            ];
-            
-            const sampleTotal = sampleOrders.reduce((sum, order) => sum + (order.price * order.qty), 0);
-            
-            const sampleData = {
-                storeName,
-                tableNumber: 1,
-                tableName: "โต๊ะที่ 1",
-                orders: sampleOrders,
-                total: sampleTotal,
-                paymentMethod: "เงินสด",
-                amountPaid: sampleTotal,
-                change: 0,
-                transactionId: `SAMPLE-${Date.now()}`,
-                timestamp: new Date().toISOString()
-            };
-            
-            showReceipt(sampleData);
-        }
-
-        // Settings functionality
-        function showSettingsPopup() {
-            document.getElementById('settingsPopup').classList.remove('hidden');
-        }
-
-        function hideSettingsPopup() {
-            document.getElementById('settingsPopup').classList.add('hidden');
-        }
-
-        function showMenuManagement() {
-            document.getElementById('menuManagementPopup').classList.remove('hidden');
-            renderMenuManagement();
-        }
-
-        function hideMenuManagement() {
-            document.getElementById('menuManagementPopup').classList.add('hidden');
-        }
-
-        function showTableManagement() {
-            document.getElementById('tableManagementPopup').classList.remove('hidden');
-            renderTableManagement();
-        }
-
-        function hideTableManagement() {
-            document.getElementById('tableManagementPopup').classList.add('hidden');
-        }
-
-        function showStoreSettings() {
-            document.getElementById('storeSettingsPopup').classList.remove('hidden');
-            document.getElementById('storeNameInput').value = storeName;
-            document.getElementById('promptPayInput').value = promptPayNumber;
-        }
-
-        function hideStoreSettings() {
-            document.getElementById('storeSettingsPopup').classList.add('hidden');
-        }
-
-        function saveStoreSettings() {
-            storeName = document.getElementById('storeNameInput').value || "ชื่อร้านอาหารของคุณ";
-            promptPayNumber = document.getElementById('promptPayInput').value || "";
-            saveData();
-            hideStoreSettings();
-            alert('บันทึกข้อมูลร้านเรียบร้อยแล้ว');
-        }
-
-        function renderMenuManagement() {
-            const menuList = document.getElementById('menuManagementList');
-            menuList.innerHTML = '';
-
-            categories.forEach((category, categoryIndex) => {
-                const categoryDiv = document.createElement('div');
-                categoryDiv.innerHTML = `
-                    <h4 style="margin: 15px 0 10px 0; color: #ce4b4b;">${category}</h4>
-                    <div style="margin-bottom: 10px;">
-                        <button class="button red" onclick="deleteCategory(${categoryIndex})">ลบหมวดหมู่</button>
-                    </div>
-                `;
-                
-                const categoryItems = menuItems.filter(item => item.category === category);
-                categoryItems.forEach((item, itemIndex) => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px;';
-                    itemDiv.innerHTML = `
-                        <span>${item.name} - ฿${item.price}</span>
-                        <button class="button red" onclick="deleteMenuItem(${item.id})">ลบ</button>
-                    `;
-                    categoryDiv.appendChild(itemDiv);
-                });
-                
-                menuList.appendChild(categoryDiv);
-            });
-        }
-
-        function renderTableManagement() {
-            const tableList = document.getElementById('tableManagementList');
-            tableList.innerHTML = '';
-
-            tables.forEach((table, index) => {
-                const tableDiv = document.createElement('div');
-                tableDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px;';
-                tableDiv.innerHTML = `
-                    <span>${table.name} ${table.isOpen ? '(เปิดอยู่)' : '(ปิด)'}</span>
-                    <div>
-                        <button class="button blue" onclick="editTableName(${index})">แก้ไขชื่อ</button>
-                        ${!table.isOpen ? `<button class="button red" onclick="deleteTable(${index})">ลบ</button>` : ''}
-                    </div>
-                `;
-                tableList.appendChild(tableDiv);
-            });
-        }
-
-        function addNewCategory() {
-            const categoryName = prompt('ชื่อหมวดหมู่ใหม่:');
-            if (categoryName && !categories.includes(categoryName)) {
-                categories.push(categoryName);
-                saveData();
-                renderMenuManagement();
-                renderCategories();
-                alert('เพิ่มหมวดหมู่เรียบร้อยแล้ว');
-            }
-        }
-
-        function deleteCategory(categoryIndex) {
-            if (confirm(`คุณแน่ใจว่าต้องการลบหมวดหมู่ "${categories[categoryIndex]}" ใช่หรือไม่?`)) {
-                const categoryToDelete = categories[categoryIndex];
-                categories.splice(categoryIndex, 1);
-                menuItems = menuItems.filter(item => item.category !== categoryToDelete);
-                saveData();
-                renderMenuManagement();
-                renderCategories();
-                renderMenu();
-                alert('ลบหมวดหมู่เรียบร้อยแล้ว');
-            }
-        }
-
-        function addNewMenuItem() {
-            const name = prompt('ชื่อเมนู:');
-            if (!name) return;
-            
-            const price = parseFloat(prompt('ราคา:'));
-            if (!price || price <= 0) return;
-            
-            const category = prompt(`หมวดหมู่ (${categories.join(', ')}):`);
-            if (!category || !categories.includes(category)) return;
-            
-            const newId = Math.max(...menuItems.map(item => item.id), 0) + 1;
-            menuItems.push({ id: newId, name, price, category });
-            saveData();
-            renderMenuManagement();
-            renderMenu();
-            alert('เพิ่มเมนูเรียบร้อยแล้ว');
-        }
-
-        function deleteMenuItem(itemId) {
-            const item = menuItems.find(item => item.id === itemId);
-            if (confirm(`คุณแน่ใจว่าต้องการลบเมนู "${item.name}" ใช่หรือไม่?`)) {
-                menuItems = menuItems.filter(item => item.id !== itemId);
-                saveData();
-                renderMenuManagement();
-                renderMenu();
-                alert('ลบเมนูเรียบร้อยแล้ว');
-            }
-        }
-
-        function addNewTable() {
-            const tableName = prompt('ชื่อโต๊ะใหม่:');
-            if (tableName) {
-                const newId = Math.max(...tables.map(table => table.id), 0) + 1;
-                tables.push({
-                    id: newId,
-                    name: tableName,
-                    orders: [],
-                    total: 0,
-                    isOpen: false,
-                    customer: null
-                });
-                saveData();
-                renderTableManagement();
-                renderTables();
-                alert('เพิ่มโต๊ะเรียบร้อยแล้ว');
-            }
-        }
-
-        function editTableName(tableIndex) {
-            const newName = prompt('ชื่อโต๊ะใหม่:', tables[tableIndex].name);
-            if (newName) {
-                tables[tableIndex].name = newName;
-                saveData();
-                renderTableManagement();
-                renderTables();
-                alert('แก้ไขชื่อโต๊ะเรียบร้อยแล้ว');
-            }
-        }
-
-        function deleteTable(tableIndex) {
-            if (confirm(`คุณแน่ใจว่าต้องการลบ "${tables[tableIndex].name}" ใช่หรือไม่?`)) {
-                tables.splice(tableIndex, 1);
-                if (activeTableIndex === tableIndex) {
-                    activeTableIndex = null;
-                    document.getElementById('welcomeScreen').classList.remove('hidden');
-                    document.getElementById('tableContent').classList.add('hidden');
-                }
-                saveData();
-                renderTableManagement();
-                renderTables();
-                alert('ลบโต๊ะเรียบร้อยแล้ว');
-            }
-        }
-
-        // Event listeners
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-        document.getElementById('paymentBtn').addEventListener('click', showPaymentPopup);
-        document.getElementById('printSampleBtn').addEventListener('click', printSampleReceipt);
-        document.getElementById('cancelPaymentBtn').addEventListener('click', hidePaymentPopup);
-        document.getElementById('confirmPaymentBtn').addEventListener('click', processPayment);
-        document.getElementById('closeReceiptBtn').addEventListener('click', hideReceipt);
-        document.getElementById('paymentAmountPaid').addEventListener('input', calculateChange);
-        document.getElementById('settingsBtn').addEventListener('click', showSettingsPopup);
-
-        // Initialize app
-        initializeData();
-        renderTables();
-        renderCategories();
-        renderMenu();
     </script>
 </body>
 </html>
