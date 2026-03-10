@@ -3,183 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS System - Complete Version</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- External Libraries -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/styled-components@5.3.11/dist/styled-components.min.js"></script>
-    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
-    <!-- Babel for JSX transformation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-        }
-        
-        #root {
-            width: 100%;
-            height: 100vh;
-        }
-        
-        /* Loading spinner */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-size: 18px;
-            color: #666;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #ce4b4b;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Print styles */
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            
-            body {
-                margin: 0;
-                padding: 0;
-                background: white;
-            }
-            
-            .receipt-preview-popup {
-                width: 80mm;
-                margin: 0;
-                padding: 0;
-                background: white;
-                color: #000000;
-            }
-            
-            .receipt-preview-popup table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            
-            .receipt-preview-popup th,
-            .receipt-preview-popup td {
-                padding: 2px 4px;
-                text-align: left;
-                border: none;
-                font-size: inherit;
-            }
-            
-            .receipt-preview-popup .summary-total {
-                font-weight: bold;
-                font-size: 1.1em;
-            }
-        }
-    </style>
+    <title>ระบบ POS ร้านบาร์ (V11 - Discount & Penalty)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="root">
-        <div class="loading">
-            <div class="spinner"></div>
-            กำลังโหลดระบบ POS...
+    <div id="app">
+        <header class="top-nav">
+            <div class="store-logo-box" id="display-store-name">Tree Bar</div>
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showView('pos')">หน้าขาย (POS)</button>
+                <button class="nav-btn" onclick="showView('history')">ประวัติบิล</button>
+                <button class="nav-btn" onclick="showView('summary')">สรุปยอดขาย</button>
+                <button class="nav-btn" onclick="showView('management')">จัดการร้าน / ลูกค้า</button>
+                <button class="nav-btn" onclick="showView('settings')">ตั้งค่า</button>
+            </div>
+        </header>
+
+        <main id="view-pos" class="view active-view pos-layout-pro">
+            <section class="pos-left-panel">
+                <div class="cart-header-pro">
+                    <div>
+                        <span style="font-size: 14px; color: var(--text-muted);" id="current-customer-label">ลูกค้าทั่วไป</span>
+                        <h2 style="margin:0; font-size: 24px; color: var(--accent);">โต๊ะ: <span id="current-table-label" style="color:#fff;">ยังไม่เลือก</span></h2>
+                    </div>
+                    <button class="btn-icon" title="ย้ายโต๊ะ" onclick="openMoveTableModal()">🔀 ย้าย</button>
+                </div>
+                
+                <div class="cart-items-pro" id="order-items-updated">
+                    <table class="cart-table-pro">
+                        <thead>
+                            <tr><th style="text-align:left;">รายการ</th><th style="width:50px; text-align:center;">จำนวน</th><th style="text-align:right;">รวม</th><th style="width:40px;"></th></tr>
+                        </thead>
+                        <tbody id="cart-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="cart-footer-pro">
+                    <div class="summary-row">
+                        <span>ค่าอาหาร/เครื่องดื่ม</span>
+                        <span>฿<span id="cart-subtotal">0.00</span></span>
+                    </div>
+                    <div class="summary-row text-success discount-row" onclick="openNumpad('discount')">
+                        <span>ส่วนลด <small>(แตะแก้ไข)</small></span>
+                        <span>- ฿<span id="discount-display">0.00</span></span>
+                    </div>
+                    <div class="summary-row text-warning penalty-row hidden" id="cart-penalty-row" onclick="openPenaltyModal()" style="cursor:pointer; border-radius:4px; padding:2px;">
+                        <span>ค่าปรับ <small>(<span id="penalty-reason-display"></span>)</small></span>
+                        <span>+ ฿<span id="penalty-display">0.00</span></span>
+                    </div>
+                    
+                    <div class="summary-row grand-total">
+                        <span>สุทธิรวม</span>
+                        <span>฿<span id="cart-total">0.00</span></span>
+                    </div>
+                    <div class="payment-buttons">
+                        <button class="btn-pay-pro btn-cash" onclick="openPayment('cash')">เงินสด</button>
+                        <button class="btn-pay-pro btn-promptpay" onclick="openPayment('promptpay')">พร้อมเพย์</button>
+                    </div>
+                    <div class="action-buttons-pro">
+                        <button class="btn-sub-action" onclick="previewPreBill()">แจ้งยอด</button>
+                        <button class="btn-sub-action btn-warning" onclick="openPenaltyModal()" style="border:none; color:#000;">+ ค่าปรับ</button>
+                        <button class="btn-sub-action btn-danger-outline" onclick="closeTable()">ล้างโต๊ะ</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pos-right-panel">
+                <div class="panel-tabs">
+                    <button id="tab-tables" class="tab-btn active" onclick="switchPosMode('tables')">1. เลือกโต๊ะ (ผังร้าน)</button>
+                    <button id="tab-menu" class="tab-btn" onclick="switchPosMode('menu')">2. สั่งอาหาร (เมนู)</button>
+                </div>
+                <div id="pos-view-tables" class="pos-dynamic-view">
+                    <div class="tables-grid-pro" id="tables-grid-updated"></div>
+                </div>
+                <div id="pos-view-menu" class="pos-dynamic-view hidden">
+                    <div class="category-filters-pro" id="modal-category-filters"></div>
+                    <div class="menu-grid-pro" id="modal-menu-grid"></div>
+                </div>
+            </section>
+        </main>
+
+        <main id="view-history" class="view hidden">
+            <div class="page-container">
+                <h2>ประวัติการขาย (บิลย้อนหลังทั้งหมด)</h2>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead><tr><th>เลขที่บิล</th><th>วันที่/เวลา</th><th>โต๊ะ</th><th>ลูกค้า</th><th>ยอดรวม</th><th>วิธีชำระ</th><th>จัดการ</th></tr></thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-summary" class="view hidden">
+            <div class="page-container">
+                <h2>สรุปยอดขายและกำไร</h2>
+                <div class="summary-filters">
+                    <div class="flex-row" style="margin-bottom:15px;">
+                        <button class="btn-filter" onclick="setSummaryRange('daily')">วันนี้</button>
+                        <button class="btn-filter" onclick="setSummaryRange('monthly')">เดือนนี้</button>
+                        <button class="btn-filter" onclick="setSummaryRange('yearly')">ปีนี้</button>
+                    </div>
+                    <div class="flex-row" style="align-items:center;">
+                        <span>ตั้งแต่:</span><input type="date" id="filter-start-date" class="form-control">
+                        <span>ถึง:</span><input type="date" id="filter-end-date" class="form-control">
+                        <button class="btn-primary" onclick="updateSummary()">ค้นหา</button>
+                    </div>
+                </div>
+                <div class="summary-cards">
+                    <div class="card" style="border-color:var(--accent);">รายได้ร้าน (ไม่รวมค่าปรับ)<br><span class="text-accent">฿<span id="sum-revenue">0.00</span></span></div>
+                    <div class="card" style="border-color:var(--success);">กำไรโดยประมาณ (<span id="sum-profit-percent">0</span>%)<br><span class="text-success">฿<span id="sum-profit">0.00</span></span></div>
+                    <div class="card" style="border-color:var(--warning);">เก็บค่าปรับรวม<br><span class="text-warning">฿<span id="sum-penalty">0.00</span></span></div>
+                    <div class="card">เงินสดรวม<br><span>฿<span id="sum-cash">0.00</span></span></div>
+                    <div class="card">พร้อมเพย์รวม<br><span>฿<span id="sum-promptpay">0.00</span></span></div>
+                </div>
+                <div class="chart-wrapper"><canvas id="salesChart"></canvas></div>
+                <h3>5 อันดับเมนูขายดี</h3>
+                <ul id="top-items-list" class="list-group"></ul>
+                <div class="flex-row" style="margin-top:20px;">
+                    <button class="btn-success" onclick="exportCSV()">ส่งออก Excel</button>
+                    <button class="btn-danger" onclick="resetDaily()">ล้างยอดขายทั้งหมด</button>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-management" class="view hidden">
+            <div class="page-container mgmt-grid">
+                <div class="mgmt-card full-width" style="border-color: var(--accent);">
+                    <h2 class="text-accent">จัดการข้อมูลลูกค้า / สมาชิก</h2>
+                    <div class="flex-row" style="margin-bottom: 15px;">
+                        <input type="text" id="new-cust-name" class="form-control" placeholder="ชื่อลูกค้า">
+                        <input type="text" id="new-cust-phone" class="form-control" placeholder="เบอร์โทรศัพท์ (ถ้ามี)">
+                        <button class="btn-primary" onclick="addCustomer()">เพิ่มลูกค้า</button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 250px;">
+                        <table class="data-table">
+                            <thead><tr><th>ชื่อลูกค้า</th><th>เบอร์โทร</th><th>แต้มสะสม</th><th>จัดการ</th></tr></thead>
+                            <tbody id="mgmt-customer-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mgmt-card">
+                    <h2>จัดการโต๊ะ</h2>
+                    <div class="flex-row"><input type="text" id="new-table-name" class="form-control" placeholder="ชื่อโต๊ะ (เช่น T21)"><button class="btn-primary" onclick="addTable()">เพิ่ม</button></div>
+                    <ul id="mgmt-table-list" class="list-group"></ul>
+                </div>
+                <div class="mgmt-card">
+                    <h2>จัดการหมวดหมู่เมนู <small class="text-muted">(ลากสลับตำแหน่งได้)</small></h2>
+                    <div class="flex-row"><input type="text" id="new-category-name" class="form-control" placeholder="ชื่อหมวดหมู่"><button class="btn-primary" onclick="addCategory()">เพิ่ม</button></div>
+                    <ul id="mgmt-category-list" class="list-group"></ul>
+                </div>
+                <div class="mgmt-card full-width">
+                    <h2>จัดการเมนูอาหาร</h2>
+                    <div class="flex-row" style="flex-wrap:wrap;">
+                        <input type="text" id="new-menu-name" class="form-control" placeholder="ชื่อเมนู" style="flex:2;">
+                        <select id="new-menu-category" class="form-control" style="flex:1;"></select>
+                        <input type="number" id="new-menu-price" class="form-control" placeholder="ราคา" style="flex:1;">
+                        <input type="text" id="new-menu-image" class="form-control" placeholder="URL รูป (เว้นได้)" style="flex:2;">
+                        <button class="btn-success" onclick="addMenuItem()">บันทึกเมนู</button>
+                    </div>
+                    <ul id="mgmt-menu-list" class="list-group grid-list" style="margin-top:15px;"></ul>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-settings" class="view hidden">
+            <div class="page-container">
+                <h2>ตั้งค่าร้าน</h2>
+                <div class="settings-form">
+                    <label>ชื่อร้าน (ใช้พิมพ์ใบเสร็จ):</label>
+                    <input type="text" id="setting-store-name" class="form-control">
+                    <label>เบอร์โทร/บัตรประชาชน พร้อมเพย์:</label>
+                    <input type="text" id="setting-promptpay-id" class="form-control">
+                    <label>เปอร์เซ็นต์กำไรโดยประมาณ (% คิดจากรายได้ร้าน ไม่รวมค่าปรับ):</label>
+                    <input type="number" id="setting-profit-margin" class="form-control" min="0" max="100">
+                    <label class="text-accent" style="font-weight:bold; margin-top:15px;">ระบบสะสมแต้ม (ยอดซื้อกี่บาท = 1 แต้ม):</label>
+                    <input type="number" id="setting-points-ratio" class="form-control" min="0" placeholder="เช่น 100 (ใส่ 0 เพื่อปิดระบบ)">
+                    <label style="margin-top:15px;">โลโก้ร้าน:</label>
+                    <div class="flex-row" style="align-items:center; margin-bottom:20px;">
+                        <img id="setting-logo-preview" style="width:80px; height:80px; object-fit:contain; background:#fff; border-radius:8px;">
+                        <div>
+                            <input type="file" id="setting-logo-upload" accept="image/*" onchange="handleLogoUpload(event)">
+                            <button class="btn-sm btn-danger" style="margin-top:5px;" onclick="clearLogo()">ลบรูปลบ</button>
+                        </div>
+                    </div>
+                    <button class="btn-primary" style="width:100%; padding:15px; font-size:16px;" onclick="saveSettings()">บันทึกการตั้งค่า</button>
+                </div>
+                <div style="margin-top:40px; border-top:1px solid #444; padding-top:20px;">
+                    <button class="btn-danger" onclick="hardReset()">ล้างข้อมูลระบบทั้งหมด (Hard Reset)</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="customer-select-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="text-accent">เปิดโต๊ะ: <span id="open-table-name"></span></h2>
+            <p style="margin-bottom:15px; color:var(--text-muted);">เลือกข้อมูลลูกค้า หรือข้ามเพื่อเปิดโต๊ะเป็นลูกค้าทั่วไป</p>
+            <select id="select-customer-dropdown" class="form-control" style="font-size: 16px; padding: 12px;"></select>
+            <div class="flex-row" style="margin-top: 20px;">
+                <button class="btn-secondary" style="flex:1;" onclick="closeCustomerSelectModal()">ยกเลิก</button>
+                <button class="btn-primary" style="flex:2;" onclick="confirmOpenTable()">เปิดโต๊ะ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="penalty-modal" class="modal-overlay hidden" style="z-index: 1500;">
+        <div class="modal">
+            <h2 class="text-warning">บวกค่าปรับ (Penalty)</h2>
+            <label>เหตุผล (เช่น แก้วแตก, ทำความสะอาด):</label>
+            <input type="text" id="penalty-reason-input" class="form-control" placeholder="ระบุเหตุผล">
+            <label>จำนวนเงิน (บาท):</label>
+            <input type="number" id="penalty-amount-input" class="form-control" placeholder="0">
+            <div class="flex-row" style="margin-top: 20px;">
+                <button class="btn-secondary" style="flex:1;" onclick="closePenaltyModal()">ยกเลิก</button>
+                <button class="btn-danger" style="flex:1;" onclick="removePenalty()">ลบทิ้ง</button>
+                <button class="btn-success" style="flex:1;" onclick="savePenalty()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="numpad-modal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal numpad-container">
+            <h2 id="numpad-title" style="margin-bottom:15px;">ระบุจำนวน</h2>
+            <div id="numpad-display" class="numpad-screen">0</div>
+            <div class="numpad-grid">
+                <button class="num-btn" onclick="numPress('7')">7</button><button class="num-btn" onclick="numPress('8')">8</button><button class="num-btn" onclick="numPress('9')">9</button>
+                <button class="num-btn" onclick="numPress('4')">4</button><button class="num-btn" onclick="numPress('5')">5</button><button class="num-btn" onclick="numPress('6')">6</button>
+                <button class="num-btn" onclick="numPress('1')">1</button><button class="num-btn" onclick="numPress('2')">2</button><button class="num-btn" onclick="numPress('3')">3</button>
+                <button class="num-btn btn-danger" onclick="numClear()">C</button><button class="num-btn" onclick="numPress('0')">0</button><button class="num-btn btn-warning" onclick="numDel()">⌫</button>
+            </div>
+            <div id="numpad-footer-standard" class="flex-row hidden" style="margin-top: 15px;">
+                <button class="btn-secondary" style="flex:1;" onclick="closeNumpad()">ยกเลิก</button>
+                <button class="btn-success" style="flex:2;" onclick="numConfirm()">ตกลง</button>
+            </div>
+            <div id="numpad-footer-discount" class="hidden" style="margin-top: 15px;">
+                <div class="flex-row" style="gap:5px;">
+                    <button class="btn-primary" style="flex:1; padding:15px; font-size:16px;" onclick="applyDiscount('percent')">ลดเป็น %</button>
+                    <button class="btn-success" style="flex:1; padding:15px; font-size:16px;" onclick="applyDiscount('baht')">ลดเป็นบาท</button>
+                </div>
+                <button class="btn-secondary" style="width:100%; margin-top:10px; padding:12px;" onclick="closeNumpad()">ยกเลิก</button>
+            </div>
+            <div id="numpad-footer-qty" class="hidden" style="margin-top: 15px;">
+                <div class="flex-row" style="gap:5px;">
+                    <button class="btn-success" style="flex:1; padding:15px;" onclick="applyQtyAction('add')">+ เพิ่ม</button>
+                    <button class="btn-danger" style="flex:1; padding:15px;" onclick="applyQtyAction('sub')">- ลด</button>
+                    <button class="btn-primary" style="flex:1; padding:15px;" onclick="applyQtyAction('set')">กำหนด</button>
+                </div>
+                <button class="btn-secondary" style="width:100%; margin-top:10px; padding:12px;" onclick="closeNumpad()">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="modal-overlay hidden" style="z-index: 1000;">
+        <div class="modal" style="text-align:center;">
+            <h2>ชำระเงิน</h2>
+            <div id="cash-section" class="hidden">
+                <p style="font-size:18px; color:var(--text-muted);">ยอดสุทธิรวมต้องชำระ</p>
+                <h1 style="color:var(--success); font-size:40px; margin:10px 0;">฿<span id="cash-due">0.00</span></h1>
+                <p style="margin-top:20px; text-align:left;">รับเงินมา (แตะตัวเลขเพื่อแก้ไข):</p>
+                <div class="numpad-screen" id="cash-received-display" onclick="openNumpad('cash')" style="cursor:pointer; font-size:30px;">0</div>
+                <div class="flex-row" style="justify-content:space-between; margin-top:15px; font-size:20px; border-top:1px dashed #444; padding-top:15px;">
+                    <span>เงินทอน:</span><span style="color:var(--warning); font-weight:bold;">฿<span id="cash-change">0.00</span></span>
+                </div>
+                <button class="btn-success" style="width:100%; padding:15px; font-size:18px; margin-top:20px;" onclick="confirmPayment('cash')">ยืนยันรับเงิน & พิมพ์ใบเสร็จ</button>
+            </div>
+            <div id="promptpay-section" class="hidden">
+                <p style="font-size:18px; color:var(--text-muted);">ยอดสุทธิรวมต้องชำระ</p>
+                <h1 style="color:var(--accent); font-size:40px; margin:10px 0;">฿<span id="promptpay-due">0.00</span></h1>
+                <div style="background:#fff; padding:20px; border-radius:10px; display:inline-block; margin:15px 0;">
+                    <div id="qrcode-img"></div>
+                </div>
+                <button class="btn-primary" style="width:100%; padding:15px; font-size:18px;" onclick="confirmPayment('promptpay')">ลูกค้าโอนแล้ว & พิมพ์ใบเสร็จ</button>
+            </div>
+            <button class="btn-secondary" style="width:100%; padding:12px; margin-top:10px;" onclick="closePaymentModal()">ยกเลิก / กลับ</button>
+        </div>
+    </div>
+
+    <div id="move-table-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>ย้ายโต๊ะ</h2>
+            <p style="margin-bottom:15px;">ย้ายออเดอร์จาก <strong>โต๊ะ <span id="move-from-label"></span></strong> ไปยัง:</p>
+            <select id="move-to-select" class="form-control" style="margin-bottom:20px; font-size:16px; padding:12px;"></select>
+            <div class="flex-row">
+                <button class="btn-secondary" style="flex:1;" onclick="closeMoveTableModal()">ยกเลิก</button>
+                <button class="btn-primary" style="flex:1;" onclick="confirmMoveTable()">ยืนยันย้ายโต๊ะ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="preview-modal" class="modal-overlay hidden">
+        <div class="modal" style="width:400px; max-height:90vh; display:flex; flex-direction:column;">
+            <h2>ตัวอย่างบิลแจ้งยอด</h2>
+            <div id="preview-content" style="background:#fff; color:#000; padding:15px; font-family:monospace; font-size:14px; flex:1; overflow-y:auto; border-radius:5px; border:1px solid #ccc;"></div>
+            <div class="flex-row" style="margin-top:15px;">
+                <button class="btn-secondary" style="flex:1;" onclick="closePreviewModal()">ยกเลิก</button>
+                <button class="btn-primary" style="flex:2;" onclick="confirmPrintPreBill()">สั่งพิมพ์จริง</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-menu-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>แก้ไขเมนู</h2>
+            <input type="hidden" id="edit-menu-id">
+            <input type="text" id="edit-menu-name" class="form-control" placeholder="ชื่อเมนู">
+            <select id="edit-menu-category" class="form-control"></select>
+            <input type="number" id="edit-menu-price" class="form-control" placeholder="ราคา">
+            <input type="text" id="edit-menu-image" class="form-control" placeholder="URL รูปภาพ">
+            <div class="flex-row">
+                <button class="btn-secondary" style="flex:1;" onclick="closeEditMenuModal()">ยกเลิก</button>
+                <button class="btn-success" style="flex:1;" onclick="saveEditMenu()">บันทึก</button>
+            </div>
         </div>
     </div>
     
-    <!-- Main Application Script -->
-    <script type="text/babel" src="app_simple.js"></script>
-    
-    <!-- PromptPay QR Code Generator -->
-    <script>
-        // Enhanced PromptPay QR Code Generator
-        window.generatePromptPayPayload = function(phoneNumber, amount) {
-            // Remove any non-digit characters from phone number
-            const cleanPhone = phoneNumber.replace(/\D/g, '');
-            
-            // Convert phone number to proper format
-            let formattedPhone;
-            if (cleanPhone.startsWith('0')) {
-                formattedPhone = '66' + cleanPhone.substring(1);
-            } else if (cleanPhone.startsWith('66')) {
-                formattedPhone = cleanPhone;
-            } else {
-                formattedPhone = '66' + cleanPhone;
-            }
-            
-            // Build PromptPay payload
-            let payload = '';
-            
-            // Payload Format Indicator
-            payload += '000201';
-            
-            // Point of Initiation Method
-            payload += '010212';
-            
-            // Merchant Account Information
-            payload += '29';
-            const phoneLength = formattedPhone.length.toString().padStart(2, '0');
-            payload += (phoneLength.length + formattedPhone.length + 4).toString().padStart(2, '0');
-            payload += '0016A000000677010111';
-            payload += '01' + phoneLength + formattedPhone;
-            
-            // Transaction Currency (THB = 764)
-            payload += '5303764';
-            
-            // Transaction Amount
-            if (amount && amount > 0) {
-                const amountStr = amount.toFixed(2);
-                payload += '54' + amountStr.length.toString().padStart(2, '0') + amountStr;
-            }
-            
-            // Country Code
-            payload += '5802TH';
-            
-            // CRC placeholder
-            payload += '6304';
-            
-            // Calculate CRC16
-            const crc = calculateCRC16(payload);
-            payload += crc;
-            
-            return payload;
-        };
-        
-        // CRC16 calculation for PromptPay
-        function calculateCRC16(data) {
-            const polynomial = 0x1021;
-            let crc = 0xFFFF;
-            
-            for (let i = 0; i < data.length; i++) {
-                crc ^= (data.charCodeAt(i) << 8);
-                for (let j = 0; j < 8; j++) {
-                    if (crc & 0x8000) {
-                        crc = (crc << 1) ^ polynomial;
-                    } else {
-                        crc <<= 1;
-                    }
-                    crc &= 0xFFFF;
-                }
-            }
-            
-            return crc.toString(16).toUpperCase().padStart(4, '0');
-        }
-    </script>
+    <div id="history-modal" class="modal-overlay hidden">
+        <div class="modal" style="width: 500px;">
+            <div class="flex-row" style="justify-content:space-between; align-items:center;">
+                <h2>บิล #<span id="hist-no"></span></h2>
+                <button class="btn-sm btn-danger" onclick="deleteWholeBill()">🗑️ แอดมิน: ลบทิ้งทั้งบิล</button>
+            </div>
+            <div id="hist-details" style="background:var(--bg-dark); padding:15px; border-radius:5px; margin-bottom:15px; font-size:14px;"></div>
+            <div class="flex-row">
+                <button class="btn-primary" style="flex:1; padding:12px;" onclick="printReprintBill()">พิมพ์ซ้ำ (Copy)</button>
+                <button class="btn-secondary" style="flex:1; padding:12px;" onclick="closeHistoryModal()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt" class="receipt">
+        <div style="text-align: center; margin-bottom: 5px;"><img id="receipt-logo" src="" style="display:none; max-width: 120px; max-height: 80px; margin: 0 auto;"></div>
+        <h2 id="receipt-store" class="text-center" style="margin:5px 0;"></h2>
+        <p class="text-center" id="receipt-reprint-badge" style="display:none; font-weight:bold; margin:0;"></p>
+        <p class="text-center" style="margin:2px 0;">บิล: <span id="receipt-no"></span></p>
+        <p class="text-center" style="margin:2px 0;">วันที่: <span id="receipt-date"></span></p>
+        <p class="text-center" style="margin:2px 0; font-size:16px; font-weight:bold;">โต๊ะ: <span id="receipt-table"></span></p>
+        <p class="text-center" style="margin:2px 0; border-bottom:1px dashed #000; padding-bottom:5px;">ลูกค้า: <span id="receipt-customer"></span></p>
+        <table class="receipt-table">
+            <thead><tr><th class="text-left">รายการ</th><th class="text-center">จำนวน</th><th class="text-right">ราคา</th></tr></thead>
+            <tbody id="receipt-items"></tbody>
+        </table>
+        <hr class="receipt-divider">
+        <p class="text-right" style="margin:2px 0;">ค่าอาหาร/เครื่องดื่ม: <span id="receipt-subtotal"></span></p>
+        <p class="text-right" style="margin:2px 0;">ส่วนลด: <span id="receipt-discount"></span></p>
+        <p class="text-right" style="margin:2px 0; font-weight:bold;">ยอดขายสุทธิ: <span id="receipt-revenue"></span></p>
+        <div id="receipt-penalty-section" style="display:none; border-top:1px dashed #000; padding-top:5px; margin-top:5px;">
+            <p class="text-right" style="margin:2px 0;">ค่าปรับ: <span id="receipt-penalty-reason"></span></p>
+            <p class="text-right" style="margin:2px 0;">ยอดค่าปรับ: <span id="receipt-penalty-amount"></span></p>
+        </div>
+        <hr class="receipt-divider">
+        <h3 class="text-right" style="margin:5px 0; font-size:18px;">รวมต้องชำระ: <span id="receipt-total"></span></h3>
+        <div id="receipt-cash-details" style="display:none; border-top:1px dashed #000; padding-top:5px; margin-top:5px;">
+            <p class="text-right" style="margin:2px 0;">รับเงิน: <span id="receipt-received"></span></p>
+            <p class="text-right" style="margin:2px 0;">เงินทอน: <span id="receipt-change"></span></p>
+        </div>
+        <p class="text-center" style="margin-top: 5px; font-weight:bold;">สถานะ: <span id="receipt-method"></span></p>
+        <p class="text-center" id="receipt-points-section" style="margin-top: 5px; font-size: 11px; display: none;"></p>
+        <div id="receipt-qr-section" style="display: none; text-align: center; margin-top: 10px;">
+            <p style="font-weight: bold; margin:0;">สแกนเพื่อชำระเงิน</p>
+            <div id="receipt-qrcode" style="display: flex; justify-content: center; margin-top: 5px;"></div>
+        </div>
+        <p class="text-center" style="margin-top: 15px; font-size:10px;">ขอบคุณที่ใช้บริการครับ</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
-
